@@ -17,6 +17,7 @@ import {
   useToast,
   FormControl,
   FormLabel,
+  Spinner,
 } from "@chakra-ui/react";
 import { AddIcon, MinusIcon } from "@chakra-ui/icons";
 import { useCart } from "../contexts/CartContext";
@@ -27,7 +28,7 @@ const Cart = ({ isOpen, onClose }) => {
   const toast = useToast();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
- 
+  const [isProcessing, setIsProcessing] = useState(false); // State to track if payment is processing
   
   let cashfree;
   var initializeSDK = async function () {
@@ -51,6 +52,8 @@ const Cart = ({ isOpen, onClose }) => {
       return;
     }
 
+    setIsProcessing(true); // Set processing state to true
+
     try {
       const response = await fetch('https://paymentwb.azurewebsites.net/api/create_cashfree_order', {
         method: 'POST',
@@ -69,7 +72,7 @@ const Cart = ({ isOpen, onClose }) => {
       }
 
       const data = await response.json();
-      sessionStorage.setItem("order_id",data.order_id);
+      sessionStorage.setItem("order_id", data.order_id);
       let checkoutOptions = {
         paymentSessionId: data.payment_session_id,
         redirectTarget: "_self",
@@ -84,6 +87,8 @@ const Cart = ({ isOpen, onClose }) => {
         duration: 5000,
         isClosable: true,
       });
+    } finally {
+      setIsProcessing(false); // Reset processing state after completion
     }
   };
 
@@ -173,9 +178,16 @@ const Cart = ({ isOpen, onClose }) => {
               colorScheme="blue" 
               width="100%" 
               onClick={handleCheckout}
-              isDisabled={!email || !phone}
+              isDisabled={!email || !phone || isProcessing}
             >
-              Proceed to Payment
+              {isProcessing ? (
+                <HStack spacing={2}>
+                  <Spinner size="sm" />
+                  Processing...
+                </HStack>
+              ) : (
+                "Proceed to Payment"
+              )}
             </Button>
           </VStack>
         </DrawerFooter>
